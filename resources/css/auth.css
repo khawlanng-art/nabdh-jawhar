@@ -1,0 +1,19 @@
+/* public/css/auth.css */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+
+.bg-cyan-50 { background-color: #ecfeff; }
+.text-cyan-700 { color: #0e7490; }
+.btn-primary {
+    background-color: #06b6d4;
+    color: white;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: bold;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.3);
+}
+.btn-primary:hover { background-color: #0891b2; }
