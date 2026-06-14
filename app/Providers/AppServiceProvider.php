@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\Order;
 use App\Models\User;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Auth;
 class AppServiceProvider extends ServiceProvider
 {
@@ -83,5 +84,8 @@ $rejectedOrders = Order::where('UserID', Auth::id())
         ]);
     }
 });
+if ($this->app->environment('production')) {
+        URL::forceScheme('https');
+    }
     }
 }
