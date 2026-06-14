@@ -1,0 +1,3 @@
+touch storage/app/public/docs/.gitkeep
+touch storage/app/public/profiles/.gitkeep
+touch storage/app/public/services/.gitkeep
