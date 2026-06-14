@@ -414,14 +414,14 @@ flex: 1;
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <nav class="sidebar" id="sidebar">
 
-    <a href="#" class="active" onclick="toggleMenu()">الرئيسية</a>
+    <a href="{{ route('Home') }}"  class="active" onclick="toggleMenu()">الرئيسية</a>
     <a href="{{ route('orders.my-orders') }}" onclick="toggleMenu()"> طلباتي</a>
      <a href="{{ route('Services.Services') }}" onclick="toggleMenu()">الخدمات</a>
     <a href="{{ route('Nurse.nurses') }}"  onclick="toggleMenu()">الممرضين </a>
     <a href="#about" onclick="toggleMenu()"> من نحن</a>
 
-
-    <a href="#about" onclick="toggleMenu()">تعديل الملف الشخصي</a>
+@auth
+    <a href="{{ route('profile.edit') }}" onclick="toggleMenu()">تعديل الملف الشخصي</a>
 
     <form method="POST" action="{{ route('logout') }}">
         @csrf
@@ -429,6 +429,7 @@ flex: 1;
             <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
         </button>
     </form>
+    @endauth
 </nav>
 
 <div class="main-container" >
@@ -485,7 +486,7 @@ position: relative;
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
         </svg>
 
-       @php $totalNotifications = $pendingReviews->count() + $acceptedOrders->count(); @endphp
+       @php $totalNotifications = $pendingReviews->count() + $acceptedOrders->count()+$rejectedOrders->count(); @endphp
         @if($totalNotifications > 0)
             <span  id="notification-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] rounded-full px-1.5 font-bold">
                 {{ $totalNotifications }}
@@ -501,7 +502,7 @@ position: relative;
     <h3 class="font-bold text-slate-800 mb-2">الاشعارات</h3>
 
     @php
-        $allNotifications = $pendingReviews->merge($acceptedOrders);
+ $allNotifications = $pendingReviews->merge($acceptedOrders)->merge($rejectedOrders);
     @endphp
 
     @forelse($allNotifications as $order)
@@ -524,8 +525,18 @@ position: relative;
     </div>
 @endforeach
 
-@endif
 
+  @elseif($order->status == 'Rejected')
+@foreach($rejectedOrders as $order)
+
+  <div class="notification-wrapper-item  notification-item-{{ $order->id }}  p-2 border-b text-sm">
+        <p class="text-red-600 cursor-pointer" onclick="openRejectModal({{ $order->id }})">
+            الطلب رقم {{ $order->id }}
+        </p>
+    </div>
+
+@endforeach
+@endif
         </div>
     @empty
         <p class="text-xs text-slate-400">لا توجد اشعارات.</p>
@@ -783,7 +794,22 @@ position: relative;
         <button id="confirmBtn" onclick="markAsSeen()" class="w-full bg-green-600 text-white py-2 rounded-xl">حسناً</button>
     </div>
 </div>
+
+<div id="rejectModalContainer" style="display:none;" class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60">
+    <div class="bg-white p-8 rounded-3xl w-80 shadow-2xl text-center">
+        <p class="text-sm mb-4">تم رفض الطلب رقم <span id="rejectModalOrderIdSpan"></span>.</p>
+  <button onclick="confirmRejectAction()" class="w-full bg-red-600 text-white py-2 rounded-xl">
+    حسناً
+</button>
+    </div>
+</div>
 <script>
+      function openRejectModal(orderId) {
+    // وضع رقم الطلب في الـ Span
+    document.getElementById('rejectModalOrderIdSpan').innerText = orderId;
+    // إظهار المودال
+    document.getElementById('rejectModalContainer').style.display = 'flex';
+}
     function openTermsModal() {
     document.getElementById('termsModal').classList.remove('hidden');
 }
@@ -990,7 +1016,43 @@ setInterval(() => {
     // تغيير النص
     textElement.innerText = messages[index];
 
-}, 4000); // يجب أن يطابق مدة الـ animation
+}, 4000);
+function confirmRejectAction() {
+    const orderId = document.getElementById('rejectModalOrderIdSpan').innerText;
+
+    fetch(`/orders/${orderId}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ status: 'Reject' })
+    })
+    .then(response => response.json()) // <--- إضافة هذا السطر ضرورية جداً
+    .then(data => {
+        // الآن data.success ستكون معرفة بشكل صحيح
+        if(data.success) {
+            // 1. إغلاق المودال فوراً
+            document.getElementById('rejectModalContainer').style.display = 'none';
+
+            // 2. باقي المنطق الخاص بك...
+            const element = document.getElementById('order-item-' + orderId);
+            if (element) {
+                element.style.transition = "opacity 0.5s";
+                element.style.opacity = "0";
+                setTimeout(() => element.remove(), 500);
+            } else {
+                location.reload();
+            }
+        } else {
+            alert('حدث خطأ: ' + (data.message || 'لم يتم تحديث الحالة'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ في الاتصال بالخادم');
+    });
+}
 </script>
 </body>
 </html>

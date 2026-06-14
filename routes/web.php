@@ -64,7 +64,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/update-password-forced', [DashboardController::class, 'updateTempPassword'])->name('update.temp.password');
 
 
-    Route::prefix('nurse')->name('nurse.')->group(function () {
+    Route::prefix('nurse')->name('nurse')->group(function () {
         Route::get('/dashboard', [NurseController::class, 'index'])->name('dashboard');
 
     });
@@ -75,8 +75,11 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::get('/admin/return-to-admin', [DashboardController::class, 'returnToAdmin'])->name('admin.return');
-Route::get('/search', [SearchController::class, 'globalSearch'])->name('global.search');
 
+
+Route::get('/admin/global-search', [SearchController::class, 'globalSearch'])
+     ->name('admin.global.search')
+     ->middleware('auth');
 Route::get('/search', [HomeController::class, 'search'])->name('search');
 // =========================================================
 // مسارات لوحة تحكم الممرض (Nurse Routes) - النسخة النهائية
@@ -88,13 +91,44 @@ Route::post('/orders/store', [OrderController::class, 'store'])->name('orders.st
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 Route::get('/Services/order/{id}', [OrderController::class, 'order'])->name('Orders.order')->middleware('auth');
 Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my-orders');
-// بدلاً من Route::resource استخدمي هذه المسارات فقط:
 
 Route::put('/orders/{id}', [OrderController::class, 'update'])->name('Orders.update');
 Route::patch('/orders/{id}', [OrderController::class, 'destroy'])->name('Orders.destroy');
 Route::post('/orders/{id}/rate', [OrderController::class, 'storeRating'])->name('orders.storeRating');
 Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
+Route::get('/nurse/dashboard', [NurseController::class, 'index']);
+Route::post('/order/{id}/accept', [NurseController::class, 'accept'])->name('order.accept');
+Route::post('/order/{id}/reject', [NurseController::class, 'reject'])->name('order.reject');
+Route::post('/orders/{id}/update', [OrderController::class, 'updateStatu']);
 ////////////////////////////////////////
 
 Route::get('/profile/edit', [PatientController::class, 'edit'])->name('profile.edit');
 Route::put('/profile/update', [PatientController::class, 'update'])->name('profile.update');
+
+///////////////////////////////////////
+Route::get('/nurse/{id}/reviews', [NurseController::class, 'showReviews'])->name('Nurse.reviews');
+// تأكدي من كتابته بأحرف صغيرة لتجنب الأخطاء
+Route::get('/nurse/dashboard', [NurseController::class, 'dashboard'])->name('Nurse.dashboard');
+Route::get('/nurse/profile/edit', [NurseController::class, 'editProfile'])->name('nurse.profile.edit');
+Route::put('/nurse/profile/update', [NurseController::class, 'updateProfile'])->name('nurse.profile.update');
+Route::get('/orders/{Id}', [NurseController::class, 'someFunction'])->name('nurse.order');
+// تأكد من وجود هذا السطر في routes/web.php
+Route::get('/nurse', [NurseController::class, 'myOrders'])->name('nurse.all_orders');
+// أضف هذا المسار ليعمل الرابط الذي يسبب الخطأ
+Route::get('/orders/details/{orderId}', [NurseController::class, 'showOrder'])->name('orders.showOrder');
+Route::patch('/orders/{id}/hide', [NurseController::class, 'hideOrder'])->name('Orders.hide');
+
+// مسار صفحة الطلبات المقبولة
+Route::get('/accepted', [NurseController::class, 'acceptedOrders'])->name('orders.accepted');
+Route::patch('/orders/{id}/complete', [NurseController::class, 'completeOrder'])
+     ->name('orders.complete');
+Route::get('/nursesearch', [App\Http\Controllers\NurseController::class, 'searchNurs'])
+     ->name('nurse.search.results');
+Route::patch('/admin/nurse/{id}/suspend', [DashboardController::class, 'suspendNurse'])
+     ->name('admin.suspend');
+// بدلاً من استخدام PUT فقط، استخدم match ليدعم النوعين
+
+Route::post('/orders/{id}/cancel', [NurseController::class, 'cancelOrder'])
+    ->name('orders.cancel');
+    Route::get('/home', [HomeController::class, 'index'])->name('guest.index');
+Route::post('/orders/confirm-cancel', [OrderController::class, 'confirmCancel'])->name('orders.confirm-cancel');

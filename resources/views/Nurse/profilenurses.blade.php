@@ -60,10 +60,21 @@ h1, p {
 
 <div class="mt-4 p-3 border-4 border-white/50 rounded-full shadow-[0_0_60px_rgba(34,211,238,0.4)] inline-block">
 
+@php
+        // محاولة الوصول للجنس مباشرة من علاقة البروفايل
+        $gender = $nurse->profile ? $nurse->profile->Gender : 'Unknown';
+    @endphp
 
+    {{-- التحقق الآن يعتمد على القيمة التي قرأناها --}}
+    @if($gender == 'Male')
     <img src="{{ asset('storage/' . $nurse->profile->ProfilePicture) }}"
          onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($nurse->Username) }}&background=EBF4FF&color=1E40AF&bold=true'"
          class="w-[600px] h-[400px] rounded-full object-cover border-4 border-cyan-100">
+          @else
+        {{-- أنثى أو أي قيمة أخرى --}}
+        <img src="https://ui-avatars.com/api/?name={{ urlencode($nurse->Username) }}&background=FCE7F3&color=DB2777&bold=true"
+             class="w-[600px] h-[400px] rounded-full object-cover border-4 border-white shadow-lg">
+    @endif
            <span class="absolute w-16 h-16 border-4 border-white rounded-full ring-2 ring-white z-20
     {{ match(strtolower($nurse->Status)) {
         'available' => 'bg-green-500',
@@ -98,7 +109,11 @@ h1, p {
 
                     <div class="bg-white/50 p-6 rounded-3xl border border-white/50">
                         <span class="block text-xs text-gray-500 font-black uppercase mb-2">التقييم</span>
-                        <span class="font-bold text-yellow-600 text-2xl">★ {{ number_format($nurse->profile->AvgRating ?? 0, 1) }}</span>
+                        @php
+        // نحسب متوسط التقييم للطلبات الخاصة بهذا الممرض
+        $avg = $nurse->orders->avg('rating') ?? 0;
+    @endphp
+                        <span class="font-bold text-yellow-600 text-2xl">★  {{ number_format($avg, 1) }}</span>
                     </div>
                 </div>
             </div>

@@ -30,14 +30,19 @@ $userExists = User::where('email', $request->email)->exists();
         $user = Auth::user();
 
 
-        if ($user->Role === 'Nurse' && $user->Status === 'Pending') {
-            Auth::logout();
-            return back()->withErrors(['email' => 'حسابك لا يزال قيد المراجعة لدى الإدارة.']);
-        }
+        if ($user->Role === 'Nurse' && ($user->Status === 'Pending' || $user->Status === 'Suspended')) {
+    Auth::logout();
+
+    $message = ($user->Status === 'Suspended')
+        ? 'حسابك تم إيقافه من قبل الإدارة.'
+        : 'حسابك لا يزال قيد المراجعة لدى الإدارة.';
+
+    return back()->withErrors(['email' => $message]);
+}
 
 
         if ($user->Role === 'Nurse') {
-             return redirect()->route('nurse.dashboard')->with('success', 'مرحباً بك مجدداً!');
+             return redirect()->route('Nurse.dashboard')->with('success', 'مرحباً بك مجدداً!');
         }
 
         return $this->redirectBasedOnRole($user);
@@ -51,7 +56,7 @@ public static function redirectBasedOnRole( $user)
 {
     return match($user->Role) {
         'Admin'   => redirect()->route('admin.dashboard'),
-        'Nurse'   => redirect()->route('nurse.dashboard'),
+        'Nurse'   => redirect()->route('Nurse.dashboard'),
         'Patient' => redirect()->route('Home'),
 
         default   => redirect()->route('login'),
@@ -66,7 +71,7 @@ public static function redirectBasedOnRole( $user)
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    return redirect('/Home');
+  return redirect()->route('guest.index');
 }
 
 
@@ -98,7 +103,7 @@ public function updatePassword(Request $request)
       'Username' => 'required|string|max:255|unique:users,Username',
         'email' => 'required|email|unique:users',
         'password' => 'required|confirmed|min:8',
-        'city' => ['required', function ($attribute, $value, $fail) {
+        'City' => ['required', function ($attribute, $value, $fail) {
             if (trim($value) !== 'المكلا') {
                 $fail('عذراً، الخدمة حالياً متاحة فقط في مدينة المكلا.');
             }
@@ -126,6 +131,7 @@ public function updatePassword(Request $request)
             'Gender' => $request->Gender,
             'DateOfBirth' => $request->DateOfBirth,
             'Address' => $request->Address,
+            'City'           => $request->City,
         ]);
 
         Auth::login($user);
@@ -138,15 +144,30 @@ public function updatePassword(Request $request)
             'email'             => 'required|email|unique:users',
             'password'          => 'required|confirmed|min:8',
             'PhoneNumber'       => 'required',
-        ]);
+ 'City' => ['required', function ($attribute, $value, $fail) {
+            if (trim($value) !== 'المكلا') {
+                $fail('عذراً، الخدمة حالياً متاحة فقط في مدينة المكلا.');
+            }
+        }],
+   'ProfilePicture' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+    'HealthCertificate' => 'required|file|mimes:pdf,jpeg,png|max:5120',
+], [
+    // رسائل الخطأ بالعربي
+    'ProfilePicture.required' => 'يرجى اختيار صورة شخصية.',
+    'ProfilePicture.image'    => 'يجب أن يكون الملف المرفوع صورة.',
+    'ProfilePicture.mimes'    => 'صيغة الصورة يجب أن تكون (jpeg, png, jpg, webp).',
+    'ProfilePicture.max'      => 'حجم الصورة يجب ألا يتجاوز 2 ميجابايت.',
 
-$request->validate([
-    'City' => ['required', function ($attribute, $value, $fail) {
-        if (trim($value) !== 'المكلا') {
-            $fail('الخدمة غير متوفرة في هذه المدينة، يرجى اختيار مدينة المكلا.');
-        }
-    }],
-]);
+    'HealthCertificate.required' => 'شهادة التخرج مطلوبة.',
+    'HealthCertificate.mimes'    => 'صيغة الشهادة يجب أن تكون (pdf, jpeg, png).',
+    'HealthCertificate.max'      => 'حجم الملف يجب ألا يتجاوز 5 ميجابايت.',
+        // رسائل الخطأ بالعربي
+        'City.required' => 'حقل المدينة مطلوب.',
+        'Username.unique' => 'عذراً، اسم المستخدم هذا موجود بالفعل، يرجى اختيار اسم آخر.',
+        'email.required' => 'البريد الإلكتروني مطلوب.',
+        'password.required' => 'كلمة المرور مطلوبة.',
+    ]);
+
         $certPath    = $request->hasFile('HealthCertificate') ? $request->file('HealthCertificate')->store('docs', 'public') : null;
         $profilePath = $request->hasFile('ProfilePicture')    ? $request->file('ProfilePicture')->store('profiles', 'public') : null;
 if ($request->hasFile('ProfilePicture')) {
@@ -201,7 +222,7 @@ if ($request->hasFile('ProfilePicture')) {
             'HospitalOrCenter'  => $request->HospitalOrCenter,
             'Specialization'    => $request->Specialization,
             'Address'           => $request->Address,
-
+            'City'              => $request->City,
             'HealthCertificate' => $certPath,
             'ProfilePicture'    => $profilePath,
 

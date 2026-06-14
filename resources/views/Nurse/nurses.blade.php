@@ -2,7 +2,7 @@
 
 @section('contents')
  <p class="text-center text-3xl font-bold text-cyan-800 mb-12"></p>
-<div id="nurse" class="py-16 px-4 bg-gray-50">
+<div id="nurse" class="py-16 px-4 bg-gray-50 ">
     <h2 class="text-center text-3xl font-bold text-cyan-800 mb-12">قائمة الممرضين</h2>
 <div class="services-container">
     @forelse($nurses as $nurse)
@@ -21,11 +21,21 @@
 
                 <div class="pt-8 pb-4 flex justify-center ">
                  <div class=" inline-block">
-    <img src="{{ asset('storage/' . ($nurse->profile->ProfilePicture ?? '')) }}"
-         loading="lazy"
-         onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($nurse->Username) }}&background=EBF4FF&color=1E40AF&bold=true'"
-         class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg">
+@php
+        // محاولة الوصول للجنس مباشرة من علاقة البروفايل
+        $gender = $nurse->profile ? $nurse->profile->Gender : 'Unknown';
+    @endphp
 
+    {{-- التحقق الآن يعتمد على القيمة التي قرأناها --}}
+    @if($gender == 'Male')
+        {{-- ذكر --}}
+        <img src="{{ asset('storage/' . ($nurse->profile->ProfilePicture ?? 'default.png')) }}"
+             class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg">
+    @else
+        {{-- أنثى أو أي قيمة أخرى --}}
+        <img src="https://ui-avatars.com/api/?name={{ urlencode($nurse->Username) }}&background=FCE7F3&color=DB2777&bold=true"
+             class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg">
+    @endif
 <span class="absolute w-5 h-5 border-4 border-white rounded-full ring-2 ring-white z-20
     {{ match(strtolower($nurse->Status)) {
         'available' => 'bg-green-500',

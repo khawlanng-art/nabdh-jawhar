@@ -376,7 +376,7 @@
                             $statusAr = ['Available' => 'متاح', 'Offline' => 'غير متصل', 'Busy' => 'مشغول'];
                         @endphp
                         <span class="inline-block px-3 py-1 rounded-full text-xs font-black {{ $currentClass }}">
-                            {{ $statusAr[$nurse->Status] ?? 'استراحة' }}
+                            {{ $statusAr[$nurse->Status] ?? 'ايقاف' }}
                         </span>
                     </td>
 
@@ -390,9 +390,13 @@
                                 <i class="fa-solid fa-pen-to-square text-xs"></i>
                             </button>
 
-                            <button onclick="openModal('delete-{{ $nurse->UserID }}')" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center transition border border-slate-300" title="حذف">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
+                             <button onclick="openModal('delete-{{ $nurse->UserID }}')" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center transition border border-slate-300" title="حذف">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+
+                         <button onclick="openModal('orders-{{ $nurse->UserID }}')" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-cyan-50 hover:text-cyan-600 flex items-center justify-center transition border border-slate-300" title="عرض الطلبات">
+                          <i class="fa-solid fa-clipboard-list text-xs"></i>
+                        </button>
                         </div>
                     </td>
                 </tr>
@@ -496,26 +500,19 @@
                                     <div class="absolute -bottom-6 -left-6 w-20 h-20 bg-blue-500/5 rounded-full blur-xl"></div>
                                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">مؤشر تقييم الأداء الحالي</span>
                                     <div class="flex items-center gap-2">
-                                        @php
-                                            $currentRating = $nurse->profile->AvgRating ?? 0;
-                                            $fullStars = floor($currentRating);
-                                        @endphp
-                                        <div class="flex items-center gap-1 justify-end" dir="ltr">
-                                            <span class="text-slate-700 font-black text-xs pr-1 tabular-nums">{{ number_format($currentRating, 1) }}</span>
-                                            <div class="flex items-center gap-0.5">
-                                                @for ($i = 1; $i <= 5; $i++)
-                                                    @if ($i <= $fullStars)
-                                                        <svg class="w-3.5 h-3.5 text-amber-400 fill-current" viewBox="0 0 20 20" style="color: #fbbf24;">
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                        </svg>
-                                                    @else
-                                                        <svg class="w-3.5 h-3.5 text-slate-200 fill-current" viewBox="0 0 20 20" style="color: #e2e8f0;">
-                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                        </svg>
-                                                    @endif
-                                                @endfor
-                                            </div>
-                                        </div>
+                                       @php
+
+            $avg = $nurse->average_rating ?? 0;
+        @endphp
+
+        <div class="flex items-center">
+            @for ($i = 1; $i <= 5; $i++)
+                <span class="{{ $i <= $avg ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+            @endfor
+            <span class="ml-2 text-black">({{ number_format($avg, 1) }})</span>
+        </div>
+
+        <p class="text-[10px]  text-slate-400">عدد الطلبات لهذا الممرض: {{ $nurse->orders->count() }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -525,7 +522,56 @@
                         </button>
                     </div>
                 </div>
+ <div id="delete-{{ $nurse->UserID }}"  class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div class="bg-white rounded-[2rem] w-full max-w-sm p-8 text-center" dir="rtl">
+                        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-trash-can"></i></div>
+                        <h3 class="text-xl font-black text-slate-800 mb-2 italic">حذف نهائي؟</h3>
+                        <p class="text-sm text-slate-500 mb-6">أنت على وشك حذف حساب الممرض <span class="text-red-600 font-bold italic">{{ $nurse->Username }}</span>، لا يمكن استرجاع البيانات بعد ذلك.</p>
+                        <div class="flex gap-3">
+                            <form action="{{ url('/nurse/delete/' . $nurse->UserID) }}" method="POST" class="flex-1">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="w-full py-3 bg-red-500 text-white rounded-xl font-black">نعم، احذف</button>
+                            </form>
+                            <button onclick="closeModal('delete-{{ $nurse->UserID }}')" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold italic">إلغاء</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="orders-{{ $nurse->UserID }}" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[24px] w-full max-w-lg p-8 shadow-[0_25px_50px_-12px_rgba(15,23,42,0.25)] border border-slate-100" dir="rtl">
+            <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+                <h3 class="text-lg font-black text-slate-800">سجل طلبات: {{ $nurse->Username }}</h3>
+                <button onclick="closeModal('orders-{{ $nurse->UserID }}')" class="text-slate-400 hover:text-rose-500">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
 
+            <div class="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar">
+                @forelse($nurse->orders as $order)
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between hover:border-cyan-200 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center font-black text-xs">
+                                {{ substr($order->service->ServiceName ?? 'ط', 0, 3) }}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">طلب #{{ $order->id }}</h3>
+                                <p class="text-[10px] text-slate-500">الخدمة: {{ $order->service->ServiceName ?? 'غير محدد' }}</p>
+                            </div>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-slate-400 text-[10px] font-bold">الاجمالي</p>
+                            <p class="text-cyan-700 font-black text-xs">{{ number_format($order->total_price) }} ريال</p>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-10 text-slate-400 italic">لا توجد طلبات لهذا الممرض حالياً</div>
+                @endforelse
+            </div>
+
+            <button onclick="closeModal('orders-{{ $nurse->UserID }}')" class="mt-6 w-full py-3 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all">
+                إغلاق
+            </button>
+        </div>
+    </div>
                 <div id="edit-{{ $nurse->UserID }}" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[9999] flex items-center justify-center p-4 transition-all duration-300">
                     <div class="bg-white rounded-[24px] w-full max-w-2xl p-8 no-scrollbar shadow-[0_25px_50px_-12px_rgba(15,23,42,0.25)] text-right overflow-y-auto max-h-[90vh] border border-slate-100" dir="rtl">
                         <div class="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
@@ -535,6 +581,24 @@
                                 </div>
                                 تعديل بيانات الملف الشخصي للممرض
                             </h3>
+
+ <div class="pt-4 border-t border-slate-100 flex items-center gap-2">
+    <form action="{{ route('admin.approve', $nurse->UserID) }}" method="POST" class="m-0" style="width: 50%;">
+        @csrf @method('PATCH')
+        <button type="submit" class="w-full h-10 flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-600 hover:text-white transition-all font-black text-xs">
+            <i class="fa-solid fa-check-double ml-1.5"></i> تفعيل
+        </button>
+    </form>
+
+    <form action="{{ route('admin.suspend', $nurse->UserID) }}" method="POST" class="m-0" style="width: 50%;">
+        @csrf @method('PATCH')
+        <button type="submit"
+                onclick="return confirm('تنبيه: هل أنت متأكد؟')"
+                class="w-full h-10 flex items-center justify-center bg-amber-50 text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-600 hover:text-white transition-all font-black text-xs">
+            <i class="fa-solid fa-ban ml-1.5"></i> إيقاف
+        </button>
+    </form>
+</div>
                             <button type="button" onclick="closeModal('edit-{{ $nurse->UserID }}')" class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center transition duration-200">
                                 <i class="fa-solid fa-xmark text-lg"></i>
                             </button>
@@ -575,7 +639,9 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                                         <div>
+
+                           <div class="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100">
                                 <button type="button" onclick="closeModal('edit-{{ $nurse->UserID }}')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition duration-200">إلغاء التعديل</button>
                                 <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 shadow-[0_4px_12px_rgba(59,130,246,0.25)] transition duration-200">حفظ التغييرات</button>
                             </div>
@@ -583,20 +649,9 @@
                     </div>
                 </div>
 
-                <div id="delete-{{ $nurse->UserID }}" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                    <div class="bg-white rounded-[2rem] w-full max-w-sm p-8 text-center" dir="rtl">
-                        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-trash-can"></i></div>
-                        <h3 class="text-xl font-black text-slate-800 mb-2 italic">حذف نهائي؟</h3>
-                        <p class="text-sm text-slate-500 mb-6">أنت على وشك حذف حساب الممرض <span class="text-red-600 font-bold italic">{{ $nurse->Username }}</span>، لا يمكن استرجاع البيانات بعد ذلك.</p>
-                        <div class="flex gap-3">
-                            <form action="{{ url('/nurse/delete/' . $nurse->UserID) }}" method="POST" class="flex-1">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="w-full py-3 bg-red-500 text-white rounded-xl font-black">نعم، احذف</button>
-                            </form>
-                            <button onclick="closeModal('delete-{{ $nurse->UserID }}')" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold italic">إلغاء</button>
-                        </div>
-                    </div>
-                </div>
+
+
+
 
                 @empty
              <tr><td colspan="4" class="px-6 py-10 text-center text-slate-400 italic">لا يوجد ممرضين مسجلين بعد</td></tr>
@@ -919,7 +974,7 @@
     </div>
 
     <div class="w-full overflow-hidden rounded-[20px] border-2 border-slate-300 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.06)]" dir="rtl">
-        <table class="w-full border-collapse text-right bg-white ">
+        <table id="services-table" class="w-full border-collapse text-right bg-white ">
             <thead class="bg-slate-100 border-b border-slate-300 text-xs font-black text-slate-800 uppercase tracking-wider">
                 <tr>
                     <th class="px-6 py-4 text-right font-black w-[30%]">الخدمة</th>

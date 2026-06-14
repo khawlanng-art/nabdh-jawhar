@@ -1,92 +1,75 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الممرض - نبض جوار</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <style>
-       
-        :root { --main-teal: #065f46; }
-        body { background-color: #f0fdfa; font-family: 'Cairo', sans-serif; }
-        .sidebar { background: rgba(255, 255, 255, 0.98); }
-        .nav-glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .nurse-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    </style>
-</head>
-<body>
+@extends('layouts.layoutnurse')
 
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+@section('contents')
+<div class="p-6 md:p-10">
 
-<nav class="sidebar" id="sidebar">
-    <a href="{{ route('') }}" class="active" onclick="toggleMenu()">لوحة التحكم</a>
-    <a href="{{ route('') }}" onclick="toggleMenu()">الطلبات القادمة</a>
-    <a href="{{ route('') }}" onclick="toggleMenu()">سجل الحالات</a>
-    <a href="{{ route('') }}" onclick="toggleMenu()">ملفي المهني</a>
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-cyan-800">لوحة الإحصائيات</h2>
+        <p class="text-slate-400 text-sm">مرحباً بك في لوحة تحكم الممرض، هنا تجد ملخص نشاطك.</p>
+    </div>
 
-    <form method="POST" action="{{ route('logout') }}" class="mt-auto">
-        @csrf
-        <button type="submit" class="w-full text-right px-4 py-3 text-rose-600 font-bold hover:bg-rose-50 rounded-xl">
-            <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
-        </button>
-    </form>
-</nav>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
 
-<div class="main-container">
-    <header class="nav-glass">
-        <div class="logo-box">
-            <h1 style="color: var(--main-teal);">نبض جوار - الممرض</h1>
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <i class="fa-solid fa-star text-amber-400 text-2xl mb-3"></i>
+            <p class="text-sm text-slate-500 font-medium">متوسط التقييمات</p>
+            <p class="text-3xl font-black text-slate-800 mt-1">
+             <a href="{{ route('Nurse.reviews', ['id' => $nurse->UserID]) }}" >
+                @php $avg = $nurse->orders_avg_rating ?? 0; @endphp
+
+    <span class="text-yellow-400">★</span>
+    <span class="font-bold text-slate-700">{{ number_format($avg, 1) }}</span>
+      <p class="text-3xl font-black text-slate-800 mt-1">
+   <span class="text-xs font-bold text-slate-400 group-hover:text-cyan-600">
+        اضغط لترى تقييماتك
+    </span>
+</p>
+    </a>
+
+            </p>
         </div>
 
-        <div class="nav-links">
-            <a href="{{ route('') }}" class="nav-item">الرئيسية</a>
-            <a href="{{ route('') }}" class="nav-item">الطلبات</a>
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <i class="fa-solid fa-bell text-blue-500 text-2xl mb-3"></i>
+            <p class="text-sm text-slate-500 font-medium">الطلبات الجديدة</p>
+            <p class="text-3xl font-black text-slate-800 mt-1">{{ $newOrdersCount }}</p>
         </div>
 
-        @auth
-        <div class="header-right relative" id="profile-container">
-            <a href="javascript:void(0)" onclick="toggleSlider()">
-                <img src="https://ui-avatars.com/api/?name=Nurse&background=065f46&color=fff" class="user-avatar">
-            </a>
-            <div id="profileSlider" class="hidden absolute left-0 mt-3 w-56 bg-white rounded-2xl shadow-xl border p-2 z-[9999]">
-                <a href="{{ route('') }}" class="block px-4 py-3 text-sm hover:bg-teal-50 rounded-xl">تعديل الملف المهني</a>
-            </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <i class="fa-solid fa-check-circle text-teal-500 text-2xl mb-3"></i>
+            <p class="text-sm text-slate-500 font-medium">الطلبات المقبولة</p>
+            <p class="text-3xl font-black text-slate-800 mt-1">{{ $acceptedOrdersCount }}</p>
         </div>
-        @endauth
 
-        <div class="menu-btn" onclick="toggleMenu()"><div></div><div></div><div></div></div>
-    </header>
-
-    <div class="p-8 mt-20">
-        @yield('contents')
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="nurse-card">
-                <h3 class="text-teal-800 font-bold">الطلبات الجديدة</h3>
-                <p class="text-3xl font-black mt-2">3</p>
-            </div>
-            <div class="nurse-card">
-                <h3 class="text-teal-800 font-bold">التقييم العام</h3>
-                <p class="text-3xl font-black mt-2">4.9 ⭐</p>
-            </div>
-            <div class="nurse-card">
-                <h3 class="text-teal-800 font-bold">الحالات النشطة</h3>
-                <p class="text-3xl font-black mt-2">1</p>
-            </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-center">
+            <i class="fa-solid fa-clock-rotate-left text-cyan-600 text-2xl mb-3"></i>
+            <p class="text-sm text-slate-500 font-medium">سجل الطلبات</p>
+            <p class="text-3xl font-black text-slate-800 mt-1">{{ $completedOrdersCount }}</p>
         </div>
     </div>
-</div>
 
-<script>
-    function toggleMenu() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('overlay').classList.toggle('visible');
-    }
-    function toggleSlider() {
-        document.getElementById('profileSlider').classList.toggle('hidden');
-    }
-</script>
-</body>
-</html>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+ <section id="about" >
+        <div class="bg-gradient-to-br from-cyan-800 to-teal-700 p-8 rounded-3xl text-white shadow-lg">
+            <h3 class="text-lg font-bold mb-3 flex items-center">
+                <i class="fa-solid fa-hospital-user ml-2"></i> من نحن
+            </h3>
+            <p class="text-cyan-50 text-sm leading-relaxed">
+                منصة "نبض جوار" هي جسركم الأول لتقديم رعاية صحية منزلية متميزة. نحن نؤمن بأن الممرض هو قلب المنظومة، ونسعى لتوفير بيئة عمل تقدّر جهودكم وتوصلكم بمن يحتاجون لرعايتكم بكل سهولة.
+            </p>
+        </div>
+
+ </section>
+ <section id="Ourvision" >
+        <div class="bg-white p-8 rounded-3xl border border-teal-100 shadow-sm">
+            <h3 class="text-lg font-bold text-teal-800 mb-3 flex items-center">
+                <i class="fa-solid fa-eye ml-2"></i> رؤيتنا
+            </h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+                أن نصبح الوجهة الأولى للرعاية الصحية المنزلية في المكلا من خلال تمكين كوادرنا التمريضية بأحدث الأدوات الرقمية، لنحقق معاً أعلى معايير الجودة والراحة للمريض في بيته.
+            </p>
+        </div>
+</section>
+    </div>
+</div>
+@endsection

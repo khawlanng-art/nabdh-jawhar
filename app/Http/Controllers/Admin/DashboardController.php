@@ -56,7 +56,9 @@ class DashboardController extends Controller
 
    public function index()
 {
-
+$nurses = User::where('Role', 'Nurse') // جلب الممرضين فقط
+              ->withAvg('orders', 'rating') // حساب متوسط عمود الـ rating لكل ممرض
+              ->get();
     $pendingNurses = User::where('Role', 'Nurse')
                          ->where('Status', 'Pending')
                          ->get();
@@ -70,7 +72,7 @@ class DashboardController extends Controller
     $services = Service::all();
 $totalServices = $services->count();
 
-    return view('admin.dashboard', compact('pendingNurses', 'activeNurses', 'totalPatients', 'allPatients','services','totalServices'));
+    return view('admin.dashboard', compact('pendingNurses', 'activeNurses', 'totalPatients', 'allPatients','services','totalServices','nurses'));
 }
 
 
@@ -204,6 +206,14 @@ public function reject(int $id)
     return redirect()->back()->with('success', 'تم رفض هذا الحساب .');
 }
 
+public function suspendNurse($id)
+{
+
+   $nurse = User::findOrFail($id);
+    $nurse->Status = 'Suspended';
+    $nurse->save();
+    return back()->with('success', 'تم إيقاف المستخدم بنجاح.');
+}
 
 
 

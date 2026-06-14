@@ -101,8 +101,9 @@ public function myOrders()
     $services = Service::all();
 
     // 3. جلب قائمة الممرضين
-    $nurses = User::where('role', 'nurse')->get(); // تأكدي من اسم الجدول أو الموديل الخاص بالممرضين لديكِ
-
+   $nurses = User::where('role', 'nurse')
+              ->where('Status', 'Available')
+              ->get();
     // 4. تمريرهم جميعاً إلى الصفحة
     return view('Orders.my-orders', compact('orders', 'services', 'nurses'));
 
@@ -163,4 +164,42 @@ public function updateStatus(Request $request, $id) {
     $order->save();
     return response()->json(['success' => true]);
 }
+public function updateStatu(Request $request, $id) {
+    $order = Order::findOrFail($id);
+    $order->status = 'Reject'; // هنا تتحول الحالة لجاري العمل
+    $order->save();
+    return response()->json(['success' => true]);
 }
+
+public function cancel($id)
+{
+    $order = \App\Models\Order::findOrFail($id);
+
+    // تحديث الحالة إلى Cancelled
+    $order->update(['status' => 'Cancelled']);
+
+    return back()->with('success', 'تم إلغاء الطلب بنجاح');
+}
+public function confirmCancel(Request $request)
+    {
+        // 1. التحقق من وجود رقم الطلب
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+        ]);
+
+        // 2. العثور على الطلب وتحديث حالته
+        $order = Order::find($request->order_id);
+
+        if ($order) {
+            $order->update([
+                'status' => 'Cancel' // أو أي اسم حالة تستخدمه في قاعدة البيانات
+            ]);
+
+            // اختياري: يمكنك إضافة رسالة نجاح
+            return back()->with('success', 'تم تأكيد إلغاء الطلب بنجاح.');
+        }
+
+        return back()->with('error', 'حدث خطأ أثناء معالجة الطلب.');
+    }
+}
+

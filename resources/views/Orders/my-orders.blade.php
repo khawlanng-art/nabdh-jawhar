@@ -22,9 +22,28 @@
                             <h3 class="text-lg font-black text-slate-800">طلب #{{ $order->id }}</h3>
                             <p class="text-sm text-slate-400">{{ $order->created_at->format('Y-m-d') }}</p>
                         </div>
-                        <span class="px-3 py-1 text-xs font-bold rounded-full {{ $order->status == 'Pending' ? 'bg-yellow-100 text-yellow-700' : ($order->status == 'Accepted' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700') }}">
-                            {{ $order->status == 'Pending' ? 'قيد الانتظار' : ($order->status == 'Accepted' ? 'تم القبول' : 'مكتمل') }}
-                        </span>
+                      @php
+    // هذا المتغير يجب أن يكون معرفاً أو يمكنك جلبه من مكان تعريف المصفوفة
+    $styles = [
+        'Pending'     => ['text' => 'قيد الانتظار', 'class' => 'bg-yellow-100 text-yellow-800'],
+        'Accepted'    => ['text' => 'تم القبول', 'class' => 'bg-blue-100 text-blue-800'],
+        'In-Progress' => ['text' => 'جاري العمل', 'class' => 'bg-purple-100 text-purple-800'],
+        'Completed'   => ['text' => 'مكتمل', 'class' => 'bg-green-100 text-green-800'],
+        'Cancelled'   => ['text' => 'ملغي', 'class' => 'bg-red-100 text-red-800'],
+        'Cancel'    => ['text' => 'ملغي', 'class' => 'bg-red-100 text-red-800'],
+        'Hidden'      => ['text' => 'مخفي', 'class' => 'hidden'],
+        'Reject'      => ['text' => 'مرفوض', 'class' => 'bg-gray-100 '], // أضفت حالة الرفض هنا
+    ];
+
+    $statusData = $styles[$order->status] ?? ['text' => 'مرفوض ', 'class' => 'bg-gray-100'];
+@endphp
+
+{{-- عرض الحالة فقط إذا لم تكن مخفية --}}
+@if($order->status !== 'Hidden')
+    <span class="px-2 py-1 rounded-full text-xs font-bold {{ $statusData['class'] }}">
+        {{ $statusData['text'] }}
+    </span>
+@endif
                     </div>
 
                     {{-- تفاصيل الخدمة --}}
@@ -43,7 +62,7 @@
                     <div x-data="{ openModal{{ $order->id }}: false }" class="grid grid-cols-1 gap-2  mt-4">
                         <a href="{{ route('orders.show', $order->id) }}" class="block w-full text-center py-2 bg-slate-50 hover:bg-cyan-700 hover:text-white rounded-xl font-bold transition-all border border-slate-200 text-xs ">عرض</a>
 
-                       @if($order->status !== 'Completed')
+                   @if($order->status == 'In-Progress' || $order->status == 'Accepted')
     <button @click="openModal{{ $order->id }} = true"
             class="block w-full text-center py-2 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl font-bold transition-all border border-blue-200 text-xs">
         تعديل
@@ -62,7 +81,7 @@
                     ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border-red-200'
                     : 'bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white border-orange-200' }}">
 
-        {{ $order->status == 'Completed' ? 'إزالة' : 'إلغاء' }}
+     {{ in_array($order->status, ['Accepted', 'In-Progress']) ? 'إلغاء' : 'إزالة' }}
     </button>
 </form>
 
@@ -91,8 +110,31 @@
                            class="hidden peer" required>
 
                     <div class="p-4 border-2 border-gray-200 rounded-2xl peer-checked:border-cyan-600 peer-checked:bg-cyan-50 transition-all text-center">
-                        <img src="{{ asset('storage/' . ($nurse->profile->ProfilePicture ?? 'default.png')) }}"
-                             class="w-12 h-12 rounded-full mx-auto mb-2 object-cover">
+
+      @php
+        // محاولة الوصول للجنس مباشرة من علاقة البروفايل
+        $gender = $nurse->profile ? $nurse->profile->Gender : 'Unknown';
+    @endphp
+
+    {{-- التحقق الآن يعتمد على القيمة التي قرأناها --}}
+    @if($gender == 'Male')
+        {{-- ذكر --}}
+        <img src="{{ asset('storage/' . ($nurse->profile->ProfilePicture ?? 'default.png')) }}"
+           class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg mx-auto mb-2">
+    @else
+        {{-- أنثى أو أي قيمة أخرى --}}
+        <img src="https://ui-avatars.com/api/?name={{ urlencode($nurse->Username) }}&background=FCE7F3&color=DB2777&bold=true"
+     class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg mx-auto mb-2">
+    @endif
+    <span class="absolute w-5 h-5 border-4 border-white rounded-full ring-2 ring-white z-20
+    {{ match(strtolower($nurse->Status)) {
+        'available' => 'bg-green-500',
+        'busy'      => 'bg-red-500',
+        'offline'   => 'bg-slate-400',
+        default     => 'bg-gray-400',
+    } }}"
+    style="margin-top: -3ch; margin-left: 200px;">
+                    </span>
                         <p class="font-bold text-xs text-slate-800 truncate">{{ $nurse->Username }}</p>
                     </div>
                 </label>
@@ -124,10 +166,13 @@
     const submitBtn = document.getElementById('submit-btn');
     const errorMsg = document.getElementById('nurse-error');
 const swiper = new Swiper('.nurseSwiper', {
-        slidesPerView: 3, // عرض 3 ممرضين في المرة الواحدة
-        spaceBetween: 10,
-        grabCursor: true,
-    });
+   direction: 'horizontal',
+    slidesPerView: 3,     // عدد العناصر الظاهرة عمودياً
+    spaceBetween: 1,
+    grabCursor: true,
+    mousewheel: true,     // اختياري: للسماح بالتمرير بعجلة الماوس
+    height: 300,          // ضروري جداً: حدد ارتفاع الحاوية التي سيتم التمرير فيها
+});
     radioButtons.forEach(radio => {
         radio.addEventListener('change', () => {
             // عند اختيار ممرض، تفعيل الزر وإخفاء التنبيه
@@ -148,4 +193,8 @@ const swiper = new Swiper('.nurseSwiper', {
     });
 
 </script>
+<style>.nurseSwiper {
+    height: 150px; /* أو أي ارتفاع مناسب لتصميمك */
+    width: 100%;
+}</style>
 @endsection

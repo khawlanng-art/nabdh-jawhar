@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -337,11 +337,12 @@ border-spacing: 0 2px !important;
     </div>
 
 
-    <input type="text"
-           id="globalSearch"
-           placeholder="ابحث هنا..."
-           class="w-full bg-slate-50 border-none pr-10 pl-4 py-3.5 rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#00bcd4]/20 focus:bg-white transition-all shadow-sm"
-    >
+   <input type="text"
+       id="adminGlobalSearch"
+       placeholder="بحث الأدمن (ممرضين، خدمات، طلبات)..."
+       class="w-full bg-slate-50 border-none pr-10 pl-4 py-3.5 rounded-2xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-[#00bcd4]/20 focus:bg-white transition-all shadow-sm">
+
+<div id="adminSearchResults" class="hidden absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"></div>
 
 <div id="searchResults"
      class="hidden fixed bg-white rounded-2xl shadow-2xl border border-slate-100 z-[9999] overflow-hidden max-h-[400px] overflow-y-auto shadow-cyan-200/50"
@@ -360,128 +361,95 @@ border-spacing: 0 2px !important;
             </button>
         </form>
     </div>
+
             @yield('contents')
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById('globalSearch');
-    const resultsBox = document.getElementById('searchResults');
+<script>document.addEventListener("DOMContentLoaded", function () {
+    const adminSearchInput = document.getElementById('adminGlobalSearch');
+    const adminResultsBox = document.getElementById('adminSearchResults'); // الحاوية الصحيحة للأدمن
 
-    if (!searchInput || !resultsBox) return;
+    if (!adminSearchInput || !adminResultsBox) return;
 
-    // 1. البحث التلقائي أثناء الكتابة (للتضليل المباشر)
-    searchInput.addEventListener('input', function() {
+    adminSearchInput.addEventListener('input', function() {
         const searchTerm = this.value.trim().toLowerCase();
 
-        if (searchTerm !== "") {
-            document.querySelectorAll('.searchable-item').forEach(item => {
-                const itemId = item.getAttribute('data-id');
-                if (itemId && itemId.toString().toLowerCase().includes(searchTerm)) {
-                    // تضليل الصف عند تطابق النص أثناء الكتابة
-                    applyHighlight(item);
-                }
-            });
-        }
-
-        // 2. طلب النتائج من السيرفر
         if (searchTerm.length < 2) {
-            resultsBox.classList.add('hidden');
+            adminResultsBox.classList.add('hidden');
             return;
         }
 
-        fetch(`/search?q=${encodeURIComponent(searchTerm)}`)
+        // استخدام المسار الخاص بالأدمن
+        fetch(`/admin/global-search?q=${encodeURIComponent(searchTerm)}`)
             .then(response => response.json())
             .then(data => {
                 let html = '';
                 let hasResults = false;
 
+                // 1. المستخدمون
                 if (data.users && data.users.length > 0) {
                     hasResults = true;
-                    html += `<div class="p-2 bg-slate-50 text-[10px] font-bold text-slate-400 border-b">المستخدمين</div>`;
+                    html += `<div class="p-2 bg-slate-50 text-[10px] font-bold text-slate-400 border-b">المستخدمون</div>`;
                     data.users.forEach(user => {
-                        const target = (user.Role === 'Patient') ? '#patients' : '#active-nurses';
-                        // ملاحظة: أضفنا استدعاء دالة التضليل عند الضغط على الرابط
-                        html += `<a href="${target}"
-                                    onclick="closeSearch(); highlightRowById('${user.UserID}');"
+                        html += `<a href="javascript:void(0)"
+                                   onclick="closeAdminSearch(); highlightRowById('user-${user.UserID}');"
+
                                     class="p-3 hover:bg-cyan-50 flex items-center gap-3 border-b border-slate-50 transition-colors block">
-                                    <div class="w-7 h-7 rounded-full bg-cyan-100 flex items-center justify-center text-xs text-cyan-600">${user.Role === 'Patient' ? '👤' : '🩺'}</div>
+                                    <div class="w-7 h-7 rounded-full bg-cyan-100 flex items-center justify-center text-xs text-cyan-600">👤</div>
                                     <div><p class="text-sm font-bold text-slate-700">${user.Username}</p></div>
                                  </a>`;
                     });
                 }
 
-                // معالجة الخدمات داخل دالة الـ fetch
-if (data.services && data.services.length > 0) {
-    hasResults = true;
-    html += `<div class="p-2 bg-slate-50 text-[10px] font-bold text-slate-400 border-b">الخدمات الطبية</div>`;
-
-    data.services.forEach(service => {
-        // قمت هنا بإضافة استدعاء دالة highlightRowById مع الـ ID الخاص بالخدمة
-        html += `<a href="#services-management"
-                    onclick="closeSearch(); highlightRowById('${service.ServiceID}');"
-                    class="p-3 hover:bg-cyan-50 flex items-center gap-3 border-b border-slate-50 transition-colors block">
-                    <div class="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-xs text-orange-600">🛠</div>
-                    <div><p class="text-sm font-bold text-slate-700">${service.ServiceName}</p></div>
-                 </a>`;
-    });
-
-
+                // 2. الخدمات
+                if (data.services && data.services.length > 0) {
+                    hasResults = true;
+                    html += `<div class="p-2 bg-slate-50 text-[10px] font-bold text-slate-400 border-b">الخدمات</div>`;
+                    data.services.forEach(service => {
+                        html += `<a href="javascript:void(0)"
+                                   onclick="closeAdminSearch(); highlightRowById('service-${service.ServiceID}');"
+                                    class="p-3 hover:bg-orange-50 flex items-center gap-3 border-b border-slate-50 transition-colors block">
+                                    <div class="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-xs text-orange-600">🛠</div>
+                                    <div><p class="text-sm font-bold text-slate-700">${service.ServiceName}</p></div>
+                                 </a>`;
+                            });
                 }
 
-                resultsBox.innerHTML = hasResults ? html : `<div class="p-4 text-center text-slate-400 text-xs">لا توجد نتائج</div>`;
-                resultsBox.classList.remove('hidden');
+                adminResultsBox.innerHTML = hasResults ? html : `<div class="p-4 text-center text-slate-400 text-xs">لا توجد نتائج</div>`;
+                adminResultsBox.classList.remove('hidden');
             });
     });
 });
 
-// دالة التضليل المشتركة (تستخدم عند الكتابة وعند الضغط على الرابط)
-function applyHighlight(element) {
-    // 1. التوجيه للسطر
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+function highlightRowById(uniqueId) {
+    // مثال: uniqueId قد يكون 'user-5' أو 'service-1'
+    const [type, id] = uniqueId.split('-');
 
-    // 2. تضليل الخلايا (td) وليس الصف (tr) فقط لضمان الظهور
-    const cells = element.querySelectorAll('td');
+    let selector = `.searchable-item[data-id="${id}"]`;
 
-    // إضافة كلاس التضليل لكل خلية بداخل السطر
-    cells.forEach(cell => {
-        cell.style.setProperty('background-color', '#fde047', 'important');
-        cell.style.transition = 'background-color 0.5s ease';
-    });
+    // إذا كان النوع service، نحدد البحث ليكون داخل جدول الخدمات فقط
+    if (type === 'service') {
+        selector = `#services-table .searchable-item[data-id="${id}"]`;
+    }
 
-    // 3. إعادة اللون للأصل بعد 3 ثواني
-    setTimeout(() => {
-        cells.forEach(cell => {
-            cell.style.removeProperty('background-color');
-        });
-    }, 3000);
-}
-// دالة البحث عن الصف وتضليله (تستخدم عند الضغط على النتيجة)
-function highlightRowById(id) {
-    const targetRow = document.querySelector(`.searchable-item[data-id="${id}"]`);
+    const targetRow = document.querySelector(selector);
 
     if (targetRow) {
         targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        // استخدام الكلاس الأزرق الجديد
         targetRow.classList.add('highlight-blue-force');
 
-        // إزالة الكلاس بعد 3 ثواني
         setTimeout(() => {
             targetRow.classList.remove('highlight-blue-force');
         }, 3000);
     } else {
-        console.warn("لم أجد الصف:", id);
+        console.error("لم يتم العثور على العنصر بـ ID:", id, "نوع:", type);
     }
 }
-// دالة إغلاق القائمة
-function closeSearch() {
-    const resultsBox = document.getElementById('searchResults');
-    const searchInput = document.getElementById('globalSearch');
-    if (resultsBox) resultsBox.classList.add('hidden');
-    if (searchInput) searchInput.value = '';
+function closeAdminSearch() {
+    const adminResultsBox = document.getElementById('adminSearchResults');
+    const adminSearchInput = document.getElementById('adminGlobalSearch');
+    if (adminResultsBox) adminResultsBox.classList.add('hidden');
+    if (adminSearchInput) adminSearchInput.value = '';
 }
-
-
     </script>
 </body>
 </html>

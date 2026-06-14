@@ -36,6 +36,9 @@ class Order extends Model
     public function service() {
         return $this->belongsTo(Service::class, 'service_id', 'ServiceID');
     }
-// في موديل User.php
+public function getAverageRatingAttribute()
+{
+    return $this->orders()->where('status', 'Completed')->avg('rating') ?? 0;
+}
 
 }

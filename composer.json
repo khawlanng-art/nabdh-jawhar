@@ -5,7 +5,8 @@
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^3.11",
-        "laravel/framework": "12.48.1"
+        "laravel/framework": "12.48.1",
+        "livewire/livewire": "^4.3"
     },
     "autoload": {
     "psr-4": {

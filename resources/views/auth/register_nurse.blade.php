@@ -140,7 +140,7 @@
                     <div class="w-full">
     <label class="block text-sm font-bold text-gray-700 mb-2">المدينة</label>
     <input type="text"
-           name="city"
+           name="City"
              value="{{ old('City') }}"
            id="cityInput"
            placeholder="أدخل مدينتك"
