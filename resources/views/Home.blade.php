@@ -41,7 +41,7 @@
     <div class="overflow-hidden h-40 flex items-center justify-center bg-gray-10">
             @if($service->IconURL)
                 @if(Str::contains($service->IconURL, ['services/', '/', '.']))
-                    <img src="{{ Storage::url($service->IconURL) }}"
+                    <img src="{{ url('storage/' . $service->IconURL) }}"
                          alt="{{ $service->ServiceName }}"
                          class="w-full h-full object-cover shadow-sm">
                 @else

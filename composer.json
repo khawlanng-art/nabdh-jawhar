@@ -15,11 +15,11 @@
             "Database\\Seeders\\": "database/seeders/"
         }
     },
-    "scripts": {
-        "post-install-cmd": [
-            "@php artisan storage:link"
-        ]
-    },
+   "scripts": {
+    "post-install-cmd": [
+        "@php artisan storage:link"
+    ]
+},
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
