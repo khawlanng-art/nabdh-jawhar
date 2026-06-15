@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# تثبيت الحزم المطلوبة
+# تثبيت الحزم المطلوبة للنظام
 RUN apt-get update && apt-get install -y \
     libpng-dev libjpeg-dev libfreetype6-dev zip unzip git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -9,14 +9,19 @@ RUN apt-get update && apt-get install -y \
 # تثبيت Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# تحديد المجلد الرئيسي للعمل
 WORKDIR /var/www/html
 
-# نسخ ملفات المشروع
+# نسخ ملفات التثبيت فقط أولاً (هذا يسرع العملية ويقلل الأخطاء)
+COPY composer.json composer.lock ./
+
+# محاولة تثبيت المكتبات بدون تنفيذ السكريبتات التي قد تفشل (مثل post-install)
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
+
+# الآن انسخ بقية المشروع
 COPY . .
 
-# تثبيت مكتبات لارافيل
-RUN composer install --no-dev --optimize-autoloader
+# تنفيذ السكريبتات وتوليد الـ autoload
+RUN composer dump-autoload --optimize
 
 # ضبط الصلاحيات والمسارات
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
