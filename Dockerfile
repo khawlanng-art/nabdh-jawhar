@@ -15,8 +15,7 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 
 # محاولة تثبيت المكتبات بدون تنفيذ السكريبتات التي قد تفشل (مثل post-install)
-RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
-
+RUN composer update --no-dev --no-scripts --no-interaction
 # الآن انسخ بقية المشروع
 COPY . .
 
