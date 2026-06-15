@@ -11,7 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-
+use Intervention\Image\Facades\Image;
 class NurseController extends Controller
 {
 
@@ -19,7 +19,7 @@ public function index()
 {
     $nurses = \App\Models\User::where('Role', 'Nurse')
   ->whereNotIn('Status', ['Pending', 'Suspended'])
-       
+
         ->select('UserID', 'Username', 'Status')
         ->with(['profile:UserID,ProfilePicture,Specialization,Gender'])
         ->withAvg('orders', 'rating')
