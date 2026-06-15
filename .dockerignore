@@ -1,6 +1,0 @@
-vendor/
-.git/
-.env
-storage/framework/cache/*
-storage/framework/sessions/*
-storage/framework/views/*
